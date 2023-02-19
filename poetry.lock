@@ -129,6 +129,20 @@ optional = false
 python-versions = ">=3.7"
 
 [[package]]
+name = "isort"
+version = "5.12.0"
+description = "A Python utility / library to sort Python imports."
+category = "dev"
+optional = false
+python-versions = ">=3.8.0"
+
+[package.extras]
+colors = ["colorama (>=0.4.3)"]
+pipfile-deprecated-finder = ["pip-shims (>=0.5.2)", "pipreqs", "requirementslib"]
+plugins = ["setuptools"]
+requirements-deprecated-finder = ["pip-api", "pipreqs"]
+
+[[package]]
 name = "jax"
 version = "0.4.4"
 description = "Differentiate, compile, and transform Numpy code."
@@ -368,7 +382,7 @@ test = ["covdefaults (>=2.2.2)", "coverage (>=7.1)", "coverage-enable-subprocess
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "9fc6226b44e054db24ab899dfab81d4ba024dc3a4d9a15ab435cc4d47e8034ba"
+content-hash = "2aa6e2822b33f3e3836daecd0c4baa5c93eb1618e6c6e361d3f55b6a0ca42502"
 
 [metadata.files]
 attrs = [
@@ -486,6 +500,10 @@ identify = [
 iniconfig = [
     {file = "iniconfig-2.0.0-py3-none-any.whl", hash = "sha256:b6a85871a79d2e3b22d2d1b94ac2824226a63c6b741c88f7ae975f18b6778374"},
     {file = "iniconfig-2.0.0.tar.gz", hash = "sha256:2d91e135bf72d31a410b17c16da610a82cb55f6b0477d1a902134b24a455b8b3"},
+]
+isort = [
+    {file = "isort-5.12.0-py3-none-any.whl", hash = "sha256:f84c2818376e66cf843d497486ea8fed8700b340f308f076c6fb1229dff318b6"},
+    {file = "isort-5.12.0.tar.gz", hash = "sha256:8bef7dde241278824a6d83f44a544709b065191b95b6e50894bdc722fcba0504"},
 ]
 jax = [
     {file = "jax-0.4.4.tar.gz", hash = "sha256:39b07e07343ed7c74492ee5e75db77456d3afdd038a322671f09fc748f6392cb"},
