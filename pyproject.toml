@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "simple-pytree"
+version = "0.1.0"
+description = ""
+authors = ["Cristian Garcia <cgarcia.e88@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "simple_pytree"}]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+jax = "*"
+jaxlib = "*"
+
+
+[tool.poetry.group.dev.dependencies]
+black = "23.1.0"
+pytest = "^7.2.1"
+pytest-cov = "^4.0.0"
+pre-commit = "^3.0.4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
