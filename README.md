@@ -83,7 +83,7 @@ from simple_pytree import Pytree, static_field
 @dataclass
 class Foo(Pytree):
     x: int
-    y: int = static_field(2) # default values are supported
+    y: int = static_field(2) # with default value
     
 foo = Foo(1)
 foo = jax.tree_map(lambda x: -x, foo) # y is not modified
