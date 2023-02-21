@@ -1,3 +1,8 @@
+
+<!-- codecov badge -->
+[![codecov](https://codecov.io/gh/cgarciae/simple-pytree/branch/main/graph/badge.svg?token=3IKEUAU3C8)](https://codecov.io/gh/cgarciae/simple-pytree)
+
+
 # Simple Pytree
 
 A _dead simple_ Python package for creating custom JAX pytree objects.
