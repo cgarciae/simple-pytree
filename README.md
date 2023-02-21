@@ -12,8 +12,7 @@ A _dead simple_ Python package for creating custom JAX pytree objects.
 * Its compatible with both `dataclasses` and regular classes
 * It has no intention of supporting Neural Network use cases (e.g. partitioning)
 
-<br><details><summary>What about Equinox, Treeo, etc?</summary>
-
+<details><summary>What about Equinox, Treeo, etc?</summary>
 
 Most pytree-based neural network libraries start simple but end up adding
 a lot of features that are not needed for simple pytree objects. `flax.struct.PytreeNode`
@@ -23,7 +22,7 @@ is the simplest one out there, but it has two downsides:
 what you want.
 2. It requires you to install `flax` just to use it.
 
-</details><br>
+</details>
 
 ## Installation
 
