@@ -7,7 +7,7 @@ from copy import copy
 
 import jax
 
-P = tp.TypeVar("P", bound="PytreeObject")
+P = tp.TypeVar("P", bound="MutablePytree")
 
 
 def field(
@@ -93,7 +93,7 @@ class PytreeMeta(ABCMeta):
         return obj
 
 
-class Pytree(metaclass=PytreeMeta):
+class MutablePytree(metaclass=PytreeMeta):
     _pytree__initialized: bool
     _pytree__static_fields: tp.Set[str]
 
@@ -141,7 +141,7 @@ class Pytree(metaclass=PytreeMeta):
         return pytree
 
 
-def tree_flatten(pytree: Pytree):
+def tree_flatten(pytree: MutablePytree):
     node_fields = {}
     static_fields = {}
     fields = vars(pytree)
@@ -175,7 +175,7 @@ def _get_all_class_vars(cls: type) -> tp.Dict[str, tp.Any]:
     return d
 
 
-class ImmutablePytree(Pytree):
+class Pytree(MutablePytree):
     if not tp.TYPE_CHECKING:
 
         def __setattr__(self: P, field: str, value: tp.Any):

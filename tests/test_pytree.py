@@ -3,13 +3,12 @@ import dataclasses
 import jax
 import pytest
 
-from simple_pytree import Pytree, node_field, static_field
-from simple_pytree.pytree import ImmutablePytree
+from simple_pytree import MutablePytree, Pytree, node_field, static_field
 
 
 class TestPytree:
     def test_pytree(self):
-        class Foo(Pytree):
+        class Foo(MutablePytree):
             x: int = static_field()
 
             def __init__(self, y) -> None:
@@ -31,7 +30,7 @@ class TestPytree:
 
     def test_pytree_dataclass(self):
         @dataclasses.dataclass
-        class Foo(Pytree):
+        class Foo(MutablePytree):
             y: int = node_field()
             x: int = static_field(2)
 
@@ -51,7 +50,7 @@ class TestPytree:
 
 class TestImmutablePytree:
     def test_immutable_pytree(self):
-        class Foo(ImmutablePytree):
+        class Foo(Pytree):
             x: int = static_field()
 
             def __init__(self, y) -> None:
@@ -78,7 +77,7 @@ class TestImmutablePytree:
 
     def test_immutable_pytree_dataclass(self):
         @dataclasses.dataclass(frozen=True)
-        class Foo(Pytree):
+        class Foo(MutablePytree):
             y: int = node_field()
             x: int = static_field(2)
 

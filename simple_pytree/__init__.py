@@ -1,1 +1,1 @@
-from .pytree import Pytree, field, node_field, static_field, ImmutablePytree
+from .pytree import MutablePytree, field, node_field, static_field, Pytree
