@@ -68,6 +68,9 @@ foo = jax.tree_map(lambda x: -x, foo) # y is not modified
 assert foo.x == -1 and foo.y == 2
 ```
 
+Static fields are not included in the pytree leaves, they
+are passed as pytree metadata instead.
+
 ### Dataclasses
 You can seamlessly use the `dataclasses.dataclass` decorator with `Pytree` classes.
 Since `static_field` returns instances of `dataclasses.Field` these it will work as expected:
