@@ -18,7 +18,7 @@ def field(
     hash: tp.Optional[bool] = None,
     compare: bool = True,
     metadata: tp.Optional[tp.Mapping[str, tp.Any]] = None,
-) -> tp.Any:
+):
     if metadata is None:
         metadata = {}
     else:
@@ -49,7 +49,7 @@ def static_field(
     hash: tp.Optional[bool] = None,
     compare: bool = True,
     metadata: tp.Optional[tp.Mapping[str, tp.Any]] = None,
-) -> tp.Any:
+):
     return field(
         default=default,
         pytree_node=False,
@@ -63,7 +63,7 @@ def static_field(
 
 
 class PytreeMeta(ABCMeta):
-    def __call__(self, *args: tp.Any, **kwds: tp.Any):
+    def __call__(self: tp.Type[P], *args: tp.Any, **kwds: tp.Any) -> P:
         obj: Pytree = super().__call__(*args, **kwds)
         object.__setattr__(obj, "_pytree__initialized", True)
         return obj
