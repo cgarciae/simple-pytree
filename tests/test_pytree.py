@@ -1,8 +1,6 @@
 import dataclasses
-from functools import partial
 
 import jax
-import jax.numpy as jnp
 import pytest
 
 from simple_pytree import Pytree, field, static_field
