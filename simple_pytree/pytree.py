@@ -71,31 +71,31 @@ class PytreeMeta(ABCMeta):
 
 class Pytree(metaclass=PytreeMeta):
     _pytree__initialized: bool
-    _pytree__static_fields: tp.Set[str]
     _pytree__class_is_mutable: bool
 
     def __init_subclass__(cls, mutable: bool = False):
-        jax.tree_util.register_pytree_node(
-            cls,
-            flatten_func=tree_flatten,
-            unflatten_func=lambda *_args: tree_unflatten(cls, *_args),
-        )
-
         # init class variables
         cls._pytree__initialized = False  # initialize mutable
-        cls._pytree__static_fields = set()
         cls._pytree__class_is_mutable = mutable
 
         # get class info
         class_vars = _get_all_class_vars(cls)
+        static_fields = []
 
         for field, value in class_vars.items():
             if "_pytree__" in field or (
                 isinstance(value, dataclasses.Field)
-                and value.metadata is not None
                 and not value.metadata.get("pytree_node", True)
             ):
-                cls._pytree__static_fields.add(field)
+                static_fields.append(field)
+
+        jax.tree_util.register_pytree_node(
+            cls,
+            flatten_func=lambda pytree: tree_flatten(
+                pytree, static_fields, with_key_paths=False
+            ),
+            unflatten_func=lambda *_args: tree_unflatten(cls, *_args),
+        )
 
     def replace(self: P, **kwargs: tp.Any) -> P:
         """
@@ -127,21 +127,33 @@ class Pytree(metaclass=PytreeMeta):
             object.__setattr__(self, field, value)
 
 
-def tree_flatten(pytree: Pytree):
-    node_fields = {}
+def tree_flatten(
+    pytree: Pytree, static_field_names: tp.List[str], with_key_paths: bool
+) -> tp.Tuple[tp.List[tp.Any], tp.Tuple[tp.Tuple[str, ...], tp.Dict[str, tp.Any]]]:
     static_fields = {}
 
+    node_names = []
+    node_values = []
     for field, value in vars(pytree).items():
-        if field in pytree._pytree__static_fields:
+        if field in static_field_names:
             static_fields[field] = value
         else:
-            node_fields[field] = value
+            if with_key_paths:
+                value = (jax.tree_util.GetAttrKey(field), value)
+            node_names.append(field)
+            node_values.append(value)
 
-    return (node_fields,), static_fields
+    node_names = tuple(node_names)
+    return node_values, (node_names, static_fields)
 
 
-def tree_unflatten(cls: tp.Type[P], static_fields, children):
-    (node_fields,) = children
+def tree_unflatten(
+    cls: tp.Type[P],
+    metadata: tp.Tuple[tp.Tuple[str, ...], tp.Dict[str, tp.Any]],
+    node_values: tp.List[tp.Any],
+) -> P:
+    node_names, static_fields = metadata
+    node_fields = dict(zip(node_names, node_values))
     pytree = cls.__new__(cls)
     pytree.__dict__.update(node_fields, **static_fields)
     return pytree
