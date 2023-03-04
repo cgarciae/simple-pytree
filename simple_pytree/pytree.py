@@ -1,4 +1,5 @@
 import dataclasses
+import importlib.util
 import typing as tp
 from abc import ABCMeta
 from copy import copy
@@ -80,7 +81,7 @@ class Pytree(metaclass=PytreeMeta):
 
         # get class info
         class_vars = _get_all_class_vars(cls)
-        static_fields = []
+        static_fields: tp.List[str] = []
 
         for field, value in class_vars.items():
             if "_pytree__" in field or (
@@ -96,6 +97,16 @@ class Pytree(metaclass=PytreeMeta):
             ),
             unflatten_func=lambda *_args: tree_unflatten(cls, *_args),
         )
+
+        # flax serialization support
+        if importlib.util.find_spec("flax") is not None:
+            from flax import serialization
+
+            serialization.register_serialization_state(
+                cls,
+                lambda pytree: to_state_dict(pytree, static_fields),
+                lambda pytree, state: from_state_dict(pytree, state, static_fields),
+            )
 
     def replace(self: P, **kwargs: tp.Any) -> P:
         """
@@ -165,3 +176,44 @@ def _get_all_class_vars(cls: type) -> tp.Dict[str, tp.Any]:
         if hasattr(c, "__dict__"):
             d.update(vars(c))
     return d
+
+
+def to_state_dict(pytree: Pytree, static_fields: tp.List[str]) -> tp.Dict[str, tp.Any]:
+    from flax import serialization
+
+    state_dict = {
+        name: serialization.to_state_dict(getattr(pytree, name))
+        for name in pytree.__dict__
+        if name not in static_fields
+    }
+    return state_dict
+
+
+def from_state_dict(
+    pytree: P, state: tp.Dict[str, tp.Any], static_fields: tp.List[str]
+) -> P:
+    """Restore the state of a data class."""
+    from flax import serialization
+
+    state = state.copy()  # copy the state so we can pop the restored fields.
+    updates = {}
+    for name in pytree.__dict__:
+        if name in static_fields:
+            continue
+        if name not in state:
+            raise ValueError(
+                f"Missing field {name} in state dict while restoring"
+                f" an instance of {type(pytree).__name__},"
+                f" at path {serialization.current_path()}"
+            )
+        value = getattr(pytree, name)
+        value_state = state.pop(name)
+        updates[name] = serialization.from_state_dict(value, value_state, name=name)
+    if state:
+        names = ",".join(state.keys())
+        raise ValueError(
+            f'Unknown field(s) "{names}" in state dict while'
+            f" restoring an instance of {type(pytree).__name__}"
+            f" at path {serialization.current_path()}"
+        )
+    return pytree.replace(**updates)
