@@ -2,9 +2,9 @@ import dataclasses
 
 import jax
 import pytest
+from flax import serialization
 
 from simple_pytree import Pytree, field, static_field
-from flax import serialization
 
 
 class TestPytree:
