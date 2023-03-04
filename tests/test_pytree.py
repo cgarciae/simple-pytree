@@ -2,6 +2,7 @@ import dataclasses
 
 import jax
 import pytest
+from flax import serialization
 
 from simple_pytree import Pytree, field, static_field
 
@@ -68,6 +69,50 @@ class TestPytree:
             return m.a + m.b
 
         assert f(module) == 3
+
+    def test_flax_serialization(self):
+        class Bar(Pytree):
+            a: int = static_field()
+
+            def __init__(self, a, b):
+                self.a = a
+                self.b = b
+
+        @dataclasses.dataclass
+        class Foo(Pytree):
+            bar: Bar
+            c: int
+            d: int = static_field()
+
+        foo: Foo = Foo(bar=Bar(a=1, b=2), c=3, d=4)
+
+        state_dict = serialization.to_state_dict(foo)
+
+        assert state_dict == {
+            "bar": {
+                "b": 2,
+            },
+            "c": 3,
+        }
+
+        state_dict["bar"]["b"] = 5
+
+        foo = serialization.from_state_dict(foo, state_dict)
+
+        assert foo.bar.b == 5
+
+        del state_dict["bar"]["b"]
+
+        with pytest.raises(ValueError, match="Missing field"):
+            serialization.from_state_dict(foo, state_dict)
+
+        state_dict["bar"]["b"] = 5
+
+        # add unknown field
+        state_dict["x"] = 6
+
+        with pytest.raises(ValueError, match="Unknown field"):
+            serialization.from_state_dict(foo, state_dict)
 
 
 class TestMutablePytree:
