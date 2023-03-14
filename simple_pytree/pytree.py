@@ -75,6 +75,7 @@ class Pytree(metaclass=PytreeMeta):
     _pytree__class_is_mutable: bool
 
     def __init_subclass__(cls, mutable: bool = False):
+        super().__init_subclass__()
         # init class variables
         cls._pytree__initialized = False  # initialize mutable
         cls._pytree__class_is_mutable = mutable
