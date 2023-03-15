@@ -1,4 +1,5 @@
 import dataclasses
+from typing import Generic, TypeVar
 
 import jax
 import pytest
@@ -113,6 +114,15 @@ class TestPytree:
 
         with pytest.raises(ValueError, match="Unknown field"):
             serialization.from_state_dict(foo, state_dict)
+
+    def test_generics(self):
+        T = TypeVar("T")
+
+        class MyClass(Pytree, Generic[T]):
+            def __init__(self, x: T):
+                self.x = x
+
+        MyClass[int]
 
 
 class TestMutablePytree:
