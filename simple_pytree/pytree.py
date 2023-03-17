@@ -228,10 +228,17 @@ class Pytree(metaclass=PytreeMeta):
         if dataclasses.is_dataclass(self):
             return dataclasses.replace(self, **kwargs)
 
-        fields = vars(self)
-        for key in kwargs:
-            if key not in fields:
-                raise ValueError(f"'{key}' is not a field of {type(self).__name__}")
+        # fields = vars(self)
+        # for key in kwargs:
+        #     if key not in fields:
+        #         raise ValueError(f"'{key}' is not a field of {type(self).__name__}")
+        # implement the previous using sets
+        unknown_keys = set(kwargs) - set(vars(self))
+        if unknown_keys:
+            raise ValueError(
+                f"Trying to replace unknown fields {unknown_keys} "
+                f"for '{type(self).__name__}'"
+            )
 
         pytree = copy(self)
         pytree.__dict__.update(kwargs)

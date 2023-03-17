@@ -163,6 +163,13 @@ class TestPytree:
         with pytest.raises(AttributeError, match=r"<.*> is immutable"):
             foo.y = 2
 
+    def test_replace_unknown_fields_error(self):
+        class Foo(Pytree):
+            pass
+
+        with pytest.raises(ValueError, match="Trying to replace unknown fields"):
+            Foo().replace(y=1)
+
 
 class TestMutablePytree:
     def test_pytree(self):
