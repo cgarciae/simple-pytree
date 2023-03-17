@@ -134,7 +134,7 @@ class TestMutablePytree:
                 self.x = 2
                 self.y = y
 
-        pytree = Foo(y=3)
+        pytree: Foo = Foo(y=3)
 
         leaves = jax.tree_util.tree_leaves(pytree)
         assert leaves == [3]
