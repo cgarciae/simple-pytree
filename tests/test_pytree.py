@@ -124,6 +124,26 @@ class TestPytree:
 
         MyClass[int]
 
+    def test_key_paths(self):
+        @dataclasses.dataclass
+        class Bar(Pytree):
+            a: int = 1
+            b: int = static_field(2)
+
+        @dataclasses.dataclass
+        class Foo(Pytree):
+            x: int = 3
+            y: int = static_field(4)
+            z: Bar = field(default_factory=Bar)
+
+        foo = Foo()
+
+        path_values, treedef = jax.tree_util.tree_flatten_with_path(foo)
+        path_values = [(list(map(str, path)), value) for path, value in path_values]
+
+        assert path_values[0] == ([".x"], 3)
+        assert path_values[1] == ([".z", ".a"], 1)
+
 
 class TestMutablePytree:
     def test_pytree(self):
