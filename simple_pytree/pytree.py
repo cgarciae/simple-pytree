@@ -66,43 +66,61 @@ def static_field(
 
 class PytreeMeta(ABCMeta):
     def __call__(self: tp.Type[P], *args: tp.Any, **kwds: tp.Any) -> P:
-        obj: Pytree = super().__call__(*args, **kwds)
-        object.__setattr__(obj, "_pytree__initialized", True)
+        obj: P = self.__new__(self)
+        obj.__dict__["_pytree__initializing"] = True
+        try:
+            obj.__init__(*args, **kwds)
+        finally:
+            del obj.__dict__["_pytree__initializing"]
         return obj
 
 
 class Pytree(metaclass=PytreeMeta):
-    _pytree__initialized: bool
+    _pytree__initializing: bool
     _pytree__class_is_mutable: bool
+    _pytree__static_fields: tp.Set[str]
+    _pytree__setter_descriptors: tp.Set[str]
 
     def __init_subclass__(cls, mutable: bool = False):
         super().__init_subclass__()
         # init class variables
-        cls._pytree__initialized = False  # initialize mutable
+        cls._pytree__initializing = False  # initialize mutable
         cls._pytree__class_is_mutable = mutable
+        cls._pytree__setter_descriptors = set()
+        cls._pytree__static_fields = set()
 
         # get class info
         class_vars = _get_all_class_vars(cls)
-        static_fields: tp.List[str] = []
 
         for field, value in class_vars.items():
-            if "_pytree__" in field or (
-                isinstance(value, dataclasses.Field)
-                and not value.metadata.get("pytree_node", True)
+            if isinstance(value, dataclasses.Field) and not value.metadata.get(
+                "pytree_node", True
             ):
-                static_fields.append(field)
+                cls._pytree__static_fields.add(field)
+
+            # add setter descriptors
+            if hasattr(value, "__set__"):
+                cls._pytree__setter_descriptors.add(field)
 
         if hasattr(jax.tree_util, "register_pytree_with_keys"):
             jax.tree_util.register_pytree_with_keys(
                 cls,
-                partial(cls._pytree__flatten, static_fields, with_key_paths=True),
-                partial(cls._pytree__unflatten, static_fields),
+                partial(
+                    cls._pytree__flatten,
+                    cls._pytree__static_fields,
+                    with_key_paths=True,
+                ),
+                cls._pytree__unflatten,
             )
         else:
             jax.tree_util.register_pytree_node(
                 cls,
-                partial(cls._pytree__flatten, static_fields, with_key_paths=False),
-                partial(cls._pytree__unflatten, static_fields),
+                partial(
+                    cls._pytree__flatten,
+                    cls._pytree__static_fields,
+                    with_key_paths=False,
+                ),
+                cls._pytree__unflatten,
             )
 
         # flax serialization support
@@ -111,27 +129,29 @@ class Pytree(metaclass=PytreeMeta):
 
             serialization.register_serialization_state(
                 cls,
-                partial(cls._to_flax_state_dict, static_fields),
-                partial(cls._from_flax_state_dict, static_fields),
+                partial(cls._to_flax_state_dict, cls._pytree__static_fields),
+                partial(cls._from_flax_state_dict, cls._pytree__static_fields),
             )
 
     @classmethod
     def _pytree__flatten(
         cls,
-        static_field_names: tp.List[str],
+        static_field_names: tp.Set[str],
         pytree: "Pytree",
         *,
         with_key_paths: bool,
-    ) -> tp.Tuple[tp.List[tp.Any], tp.Tuple[tp.List[str], tp.Dict[str, tp.Any]]]:
-        static_fields = {}
-
+    ) -> tp.Tuple[
+        tp.List[tp.Any],
+        tp.Tuple[tp.List[str], tp.List[tp.Tuple[str, tp.Any]]],
+    ]:
+        static_fields = []
         node_names = []
         node_values = []
         # sort to ensure deterministic order
         for field in sorted(vars(pytree)):
             value = getattr(pytree, field)
             if field in static_field_names:
-                static_fields[field] = value
+                static_fields.append((field, value))
             else:
                 if with_key_paths:
                     value = (jax.tree_util.GetAttrKey(field), value)
@@ -143,32 +163,34 @@ class Pytree(metaclass=PytreeMeta):
     @classmethod
     def _pytree__unflatten(
         cls: tp.Type[P],
-        static_field_names: tp.List[str],
-        metadata: tp.Tuple[tp.List[str], tp.Dict[str, tp.Any]],
+        metadata: tp.Tuple[tp.List[str], tp.List[tp.Tuple[str, tp.Any]]],
         node_values: tp.List[tp.Any],
     ) -> P:
         node_names, static_fields = metadata
         node_fields = dict(zip(node_names, node_values))
         pytree = cls.__new__(cls)
-        pytree.__dict__.update(node_fields, **static_fields)
+        pytree.__dict__.update(node_fields, **dict(static_fields))
         return pytree
 
     @classmethod
     def _to_flax_state_dict(
-        cls, static_fields: tp.List[str], pytree: "Pytree"
+        cls, static_field_names: tp.Set[str], pytree: "Pytree"
     ) -> tp.Dict[str, tp.Any]:
         from flax import serialization
 
         state_dict = {
             name: serialization.to_state_dict(getattr(pytree, name))
             for name in pytree.__dict__
-            if name not in static_fields
+            if name not in static_field_names
         }
         return state_dict
 
     @classmethod
     def _from_flax_state_dict(
-        cls, static_fields: tp.List[str], pytree: P, state: tp.Dict[str, tp.Any]
+        cls,
+        static_field_names: tp.Set[str],
+        pytree: P,
+        state: tp.Dict[str, tp.Any],
     ) -> P:
         """Restore the state of a data class."""
         from flax import serialization
@@ -176,7 +198,7 @@ class Pytree(metaclass=PytreeMeta):
         state = state.copy()  # copy the state so we can pop the restored fields.
         updates = {}
         for name in pytree.__dict__:
-            if name in static_fields:
+            if name in static_field_names:
                 continue
             if name not in state:
                 raise ValueError(
@@ -218,7 +240,11 @@ class Pytree(metaclass=PytreeMeta):
     if not tp.TYPE_CHECKING:
 
         def __setattr__(self: P, field: str, value: tp.Any):
-            if self._pytree__initialized and not self._pytree__class_is_mutable:
+            if (
+                not self._pytree__initializing
+                and not self._pytree__class_is_mutable
+                and field not in self._pytree__setter_descriptors
+            ):
                 raise AttributeError(
                     f"{type(self)} is immutable, trying to update field {field}"
                 )

@@ -144,6 +144,25 @@ class TestPytree:
         assert path_values[0] == ([".x"], 3)
         assert path_values[1] == ([".z", ".a"], 1)
 
+    def test_setter_attribute_allowed(self):
+        n = None
+
+        class SetterDescriptor:
+            def __set__(self, _, value):
+                nonlocal n
+                n = value
+
+        class Foo(Pytree):
+            x = SetterDescriptor()
+
+        foo = Foo()
+        foo.x = 1
+
+        assert n == 1
+
+        with pytest.raises(AttributeError, match=r"<.*> is immutable"):
+            foo.y = 2
+
 
 class TestMutablePytree:
     def test_pytree(self):
