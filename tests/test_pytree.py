@@ -124,6 +124,52 @@ class TestPytree:
 
         MyClass[int]
 
+    def test_key_paths(self):
+        @dataclasses.dataclass
+        class Bar(Pytree):
+            a: int = 1
+            b: int = static_field(2)
+
+        @dataclasses.dataclass
+        class Foo(Pytree):
+            x: int = 3
+            y: int = static_field(4)
+            z: Bar = field(default_factory=Bar)
+
+        foo = Foo()
+
+        path_values, treedef = jax.tree_util.tree_flatten_with_path(foo)
+        path_values = [(list(map(str, path)), value) for path, value in path_values]
+
+        assert path_values[0] == ([".x"], 3)
+        assert path_values[1] == ([".z", ".a"], 1)
+
+    def test_setter_attribute_allowed(self):
+        n = None
+
+        class SetterDescriptor:
+            def __set__(self, _, value):
+                nonlocal n
+                n = value
+
+        class Foo(Pytree):
+            x = SetterDescriptor()
+
+        foo = Foo()
+        foo.x = 1
+
+        assert n == 1
+
+        with pytest.raises(AttributeError, match=r"<.*> is immutable"):
+            foo.y = 2
+
+    def test_replace_unknown_fields_error(self):
+        class Foo(Pytree):
+            pass
+
+        with pytest.raises(ValueError, match="Trying to replace unknown fields"):
+            Foo().replace(y=1)
+
 
 class TestMutablePytree:
     def test_pytree(self):
