@@ -170,6 +170,20 @@ class TestPytree:
         with pytest.raises(ValueError, match="Trying to replace unknown fields"):
             Foo().replace(y=1)
 
+    def test_dataclass_inheritance(self):
+        @dataclasses.dataclass
+        class A(Pytree):
+            a: int = 1
+            b: int = static_field(2)
+
+        @dataclasses.dataclass
+        class B(A):
+            c: int = 3
+
+        pytree = B()
+        leaves = jax.tree_util.tree_leaves(pytree)
+        assert leaves == [1, 3]
+
 
 class TestMutablePytree:
     def test_pytree(self):
