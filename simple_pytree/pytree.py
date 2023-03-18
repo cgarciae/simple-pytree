@@ -1,5 +1,6 @@
 import dataclasses
 import importlib.util
+import itertools
 import typing as tp
 from abc import ABCMeta
 from copy import copy
@@ -78,29 +79,32 @@ class PytreeMeta(ABCMeta):
 class Pytree(metaclass=PytreeMeta):
     _pytree__initializing: bool
     _pytree__class_is_mutable: bool
-    _pytree__static_fields: tp.Set[str]
-    _pytree__setter_descriptors: tp.Set[str]
+    _pytree__static_fields: tp.FrozenSet[str]
+    _pytree__setter_descriptors: tp.FrozenSet[str]
 
     def __init_subclass__(cls, mutable: bool = False):
         super().__init_subclass__()
-        # init class variables
-        cls._pytree__initializing = False  # initialize mutable
-        cls._pytree__class_is_mutable = mutable
-        cls._pytree__setter_descriptors = set()
-        cls._pytree__static_fields = set()
 
-        # get class info
-        class_vars = _get_all_class_vars(cls)
+        # gather class info
+        class_vars = vars(cls)
+        setter_descriptors = set()
+        static_fields = _inherited_static_fields(cls)
 
         for field, value in class_vars.items():
             if isinstance(value, dataclasses.Field) and not value.metadata.get(
                 "pytree_node", True
             ):
-                cls._pytree__static_fields.add(field)
+                static_fields.add(field)
 
             # add setter descriptors
             if hasattr(value, "__set__"):
-                cls._pytree__setter_descriptors.add(field)
+                setter_descriptors.add(field)
+
+        # init class variables
+        cls._pytree__initializing = False
+        cls._pytree__class_is_mutable = mutable
+        cls._pytree__static_fields = frozenset(static_fields)
+        cls._pytree__setter_descriptors = frozenset(setter_descriptors)
 
         if hasattr(jax.tree_util, "register_pytree_with_keys"):
             jax.tree_util.register_pytree_with_keys(
@@ -136,7 +140,7 @@ class Pytree(metaclass=PytreeMeta):
     @classmethod
     def _pytree__flatten(
         cls,
-        static_field_names: tp.Set[str],
+        static_field_names: tp.FrozenSet[str],
         pytree: "Pytree",
         *,
         with_key_paths: bool,
@@ -174,7 +178,7 @@ class Pytree(metaclass=PytreeMeta):
 
     @classmethod
     def _to_flax_state_dict(
-        cls, static_field_names: tp.Set[str], pytree: "Pytree"
+        cls, static_field_names: tp.FrozenSet[str], pytree: "Pytree"
     ) -> tp.Dict[str, tp.Any]:
         from flax import serialization
 
@@ -188,7 +192,7 @@ class Pytree(metaclass=PytreeMeta):
     @classmethod
     def _from_flax_state_dict(
         cls,
-        static_field_names: tp.Set[str],
+        static_field_names: tp.FrozenSet[str],
         pytree: P,
         state: tp.Dict[str, tp.Any],
     ) -> P:
@@ -228,11 +232,6 @@ class Pytree(metaclass=PytreeMeta):
         if dataclasses.is_dataclass(self):
             return dataclasses.replace(self, **kwargs)
 
-        # fields = vars(self)
-        # for key in kwargs:
-        #     if key not in fields:
-        #         raise ValueError(f"'{key}' is not a field of {type(self).__name__}")
-        # implement the previous using sets
         unknown_keys = set(kwargs) - set(vars(self))
         if unknown_keys:
             raise ValueError(
@@ -259,9 +258,13 @@ class Pytree(metaclass=PytreeMeta):
             object.__setattr__(self, field, value)
 
 
-def _get_all_class_vars(cls: type) -> tp.Dict[str, tp.Any]:
-    d = {}
-    for c in reversed(cls.mro()):
-        if hasattr(c, "__dict__"):
-            d.update(vars(c))
-    return d
+def _inherited_static_fields(cls: type) -> tp.Set[str]:
+    static_fields = set()
+    for parent_class in cls.mro():
+        if (
+            parent_class is not cls
+            and parent_class is not Pytree
+            and issubclass(parent_class, Pytree)
+        ):
+            static_fields.update(parent_class._pytree__static_fields)
+    return static_fields
