@@ -30,7 +30,7 @@ jobs:
           echo "::set-output name=RELEASE_VERSION::${RELEASE_VERSION}"
 
 
-      - name: Test Environment
+      - name: Update version
         run: |
           RELEASE_VERSION='${{ steps.setup.outputs.RELEASE_VERSION }}'
 
