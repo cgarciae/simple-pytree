@@ -184,6 +184,18 @@ class TestPytree:
         leaves = jax.tree_util.tree_leaves(pytree)
         assert leaves == [1, 3]
 
+    def test_pytree_with_new(self):
+        class A(Pytree):
+            def __init__(self, a):
+                self.a = a
+
+            def __new__(cls, a):
+                return super().__new__(cls)
+
+        pytree = A(a=1)
+
+        pytree = jax.tree_map(lambda x: x * 2, pytree)
+
 
 class TestMutablePytree:
     def test_pytree(self):
