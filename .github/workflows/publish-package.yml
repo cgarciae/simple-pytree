@@ -40,16 +40,19 @@ jobs:
         run: |
           poetry install --without dev
       
-      - name: Build Docs 🔨
-        run: |
-          cp README.md docs/index.md
-          poetry run mkdocs build
+      # ----------------------------------------
+      # No docs for now
+      # ----------------------------------------
+      # - name: Build Docs 🔨
+      #   run: |
+      #     cp README.md docs/index.md
+      #     poetry run mkdocs build
         
-      - name: Deploy Page 🚀
-        uses: JamesIves/github-pages-deploy-action@4.1.6
-        with:
-          branch: gh-pages
-          folder: site
+      # - name: Deploy Page 🚀
+      #   uses: JamesIves/github-pages-deploy-action@4.1.6
+      #   with:
+      #     branch: gh-pages
+      #     folder: site
 
       - name: Publish to PyPI
         run: |
