@@ -66,11 +66,11 @@ def static_field(
 
 
 class PytreeMeta(ABCMeta):
-    def __call__(self: tp.Type[P], *args: tp.Any, **kwds: tp.Any) -> P:
-        obj: P = self.__new__(self)
+    def __call__(self: tp.Type[P], *args: tp.Any, **kwargs: tp.Any) -> P:
+        obj: P = self.__new__(self, *args, **kwargs)
         obj.__dict__["_pytree__initializing"] = True
         try:
-            obj.__init__(*args, **kwds)
+            obj.__init__(*args, **kwargs)
         finally:
             del obj.__dict__["_pytree__initializing"]
         return obj
@@ -172,7 +172,7 @@ class Pytree(metaclass=PytreeMeta):
     ) -> P:
         node_names, static_fields = metadata
         node_fields = dict(zip(node_names, node_values))
-        pytree = cls.__new__(cls)
+        pytree = object.__new__(cls)
         pytree.__dict__.update(node_fields, **dict(static_fields))
         return pytree
 
