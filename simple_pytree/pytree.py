@@ -11,60 +11,6 @@ import jax
 P = tp.TypeVar("P", bound="Pytree")
 
 
-def field(
-    default: tp.Any = dataclasses.MISSING,
-    *,
-    pytree_node: bool = True,
-    default_factory: tp.Any = dataclasses.MISSING,
-    init: bool = True,
-    repr: bool = True,
-    hash: tp.Optional[bool] = None,
-    compare: bool = True,
-    metadata: tp.Optional[tp.Mapping[str, tp.Any]] = None,
-):
-    if metadata is None:
-        metadata = {}
-    else:
-        metadata = dict(metadata)
-
-    if "pytree_node" in metadata:
-        raise ValueError("'pytree_node' found in metadata")
-
-    metadata["pytree_node"] = pytree_node
-
-    return dataclasses.field(
-        default=default,
-        default_factory=default_factory,
-        init=init,
-        repr=repr,
-        hash=hash,
-        compare=compare,
-        metadata=metadata,
-    )
-
-
-def static_field(
-    default: tp.Any = dataclasses.MISSING,
-    *,
-    default_factory: tp.Any = dataclasses.MISSING,
-    init: bool = True,
-    repr: bool = True,
-    hash: tp.Optional[bool] = None,
-    compare: bool = True,
-    metadata: tp.Optional[tp.Mapping[str, tp.Any]] = None,
-):
-    return field(
-        default=default,
-        pytree_node=False,
-        default_factory=default_factory,
-        init=init,
-        repr=repr,
-        hash=hash,
-        compare=compare,
-        metadata=metadata,
-    )
-
-
 class PytreeMeta(ABCMeta):
     def __call__(self: tp.Type[P], *args: tp.Any, **kwargs: tp.Any) -> P:
         obj: P = self.__new__(self, *args, **kwargs)
