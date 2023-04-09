@@ -1,11 +1,10 @@
-import dataclasses
 from typing import Generic, TypeVar
 
 import jax
 import pytest
 from flax import serialization
 
-from simple_pytree import Pytree, field, static_field
+from simple_pytree import Pytree, dataclass, field, static_field
 
 
 class TestPytree:
@@ -36,10 +35,10 @@ class TestPytree:
             pytree.x = 4
 
     def test_immutable_pytree_dataclass(self):
-        @dataclasses.dataclass(frozen=True)
+        @dataclass(frozen=True)
         class Foo(Pytree):
             y: int = field()
-            x: int = static_field(2)
+            x: int = static_field(default=2)
 
         pytree = Foo(y=3)
 
@@ -58,7 +57,7 @@ class TestPytree:
             pytree.x = 4
 
     def test_jit(self):
-        @dataclasses.dataclass
+        @dataclass
         class Foo(Pytree):
             a: int
             b: int = static_field()
@@ -79,7 +78,7 @@ class TestPytree:
                 self.a = a
                 self.b = b
 
-        @dataclasses.dataclass
+        @dataclass
         class Foo(Pytree):
             bar: Bar
             c: int
@@ -125,15 +124,15 @@ class TestPytree:
         MyClass[int]
 
     def test_key_paths(self):
-        @dataclasses.dataclass
+        @dataclass
         class Bar(Pytree):
             a: int = 1
-            b: int = static_field(2)
+            b: int = static_field(default=2)
 
-        @dataclasses.dataclass
+        @dataclass
         class Foo(Pytree):
             x: int = 3
-            y: int = static_field(4)
+            y: int = static_field(default=4)
             z: Bar = field(default_factory=Bar)
 
         foo = Foo()
@@ -171,12 +170,12 @@ class TestPytree:
             Foo().replace(y=1)
 
     def test_dataclass_inheritance(self):
-        @dataclasses.dataclass
+        @dataclass
         class A(Pytree):
             a: int = 1
-            b: int = static_field(2)
+            b: int = static_field(default=2)
 
-        @dataclasses.dataclass
+        @dataclass
         class B(A):
             c: int = 3
 
@@ -224,10 +223,10 @@ class TestMutablePytree:
         assert pytree.x == 4
 
     def test_pytree_dataclass(self):
-        @dataclasses.dataclass
+        @dataclass
         class Foo(Pytree, mutable=True):
             y: int = field()
-            x: int = static_field(2)
+            x: int = static_field(default=2)
 
         pytree: Foo = Foo(y=3)
 
