@@ -72,24 +72,26 @@ Static fields are not included in the pytree leaves, they
 are passed as pytree metadata instead.
 
 ### Dataclasses
-You can seamlessly use the `dataclasses.dataclass` decorator with `Pytree` classes.
-Since `static_field` returns instances of `dataclasses.Field` these it will work as expected:
+`simple_pytree` provides a `dataclass` decorator you can use with classes
+that contain `static_field`s:
 
 ```python
 import jax
-from dataclasses import dataclass
-from simple_pytree import Pytree, static_field
+from simple_pytree import Pytree, dataclass, static_field
 
 @dataclass
 class Foo(Pytree):
     x: int
-    y: int = static_field(2) # with default value
+    y: int = static_field(default=2)
     
 foo = Foo(1)
 foo = jax.tree_map(lambda x: -x, foo) # y is not modified
 
 assert foo.x == -1 and foo.y == 2
 ```
+`simple_pytree.dataclass` is just a wrapper around `dataclasses.dataclass` but
+when used static analysis tools and IDEs will understand that `static_field` is a 
+field specifier just like `dataclasses.field`.
 
 ### Mutability
 `Pytree` objects are immutable by default after `__init__`:

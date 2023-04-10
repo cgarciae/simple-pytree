@@ -5,12 +5,13 @@ description = ""
 authors = ["Cristian Garcia <cgarcia.e88@gmail.com>"]
 license = "MIT"
 readme = "README.md"
-packages = [{include = "simple_pytree"}]
+packages = [{ include = "simple_pytree" }]
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.12"
 jax = "*"
 jaxlib = "*"
+typing-extensions = "*"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -24,3 +25,6 @@ flax = "*"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.coverage.report]
+exclude_lines = ["@tp.overload"]
