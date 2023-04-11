@@ -28,7 +28,7 @@ class Pytree(metaclass=PytreeMeta):
     _pytree__static_fields: tp.FrozenSet[str]
     _pytree__setter_descriptors: tp.FrozenSet[str]
 
-    def __init_subclass__(cls, mutable: bool = False):
+    def __init_subclass__(cls, mutable: bool = False, deterministic: bool = False):
         super().__init_subclass__()
 
         # gather class info
@@ -66,12 +66,14 @@ class Pytree(metaclass=PytreeMeta):
                         cls._pytree__flatten,
                         sorted_static_fields,
                         with_key_paths=True,
+                        deterministic=deterministic,
                     ),
                     cls._pytree__unflatten,
                     flatten_func=partial(
                         cls._pytree__flatten,
                         sorted_static_fields,
                         with_key_paths=False,
+                        deterministic=deterministic,
                     ),
                 )
             else:
@@ -81,6 +83,7 @@ class Pytree(metaclass=PytreeMeta):
                         cls._pytree__flatten,
                         sorted_static_fields,
                         with_key_paths=True,
+                        deterministic=deterministic,
                     ),
                     cls._pytree__unflatten,
                 )
@@ -91,6 +94,7 @@ class Pytree(metaclass=PytreeMeta):
                     cls._pytree__flatten,
                     sorted_static_fields,
                     with_key_paths=False,
+                    deterministic=deterministic,
                 ),
                 cls._pytree__unflatten,
             )
@@ -112,11 +116,13 @@ class Pytree(metaclass=PytreeMeta):
         pytree: "Pytree",
         *,
         with_key_paths: bool,
+        deterministic: bool,
     ) -> tp.Tuple[tp.List[tp.Any], tp.Tuple[tp.List[str], tp.Dict[str, tp.Any]],]:
         nodes = vars(pytree).copy()
         static = {k: nodes.pop(k) for k in sorted_static_fields}
 
-        nodes = dict(sorted(nodes.items(), key=lambda x: x[0]))
+        if deterministic:
+            nodes = dict(sorted(nodes.items(), key=lambda x: x[0]))
 
         if with_key_paths:
             node_values = [
