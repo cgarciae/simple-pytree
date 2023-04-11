@@ -116,6 +116,8 @@ class Pytree(metaclass=PytreeMeta):
         nodes = vars(pytree).copy()
         static = {k: nodes.pop(k) for k in sorted_static_fields}
 
+        nodes = dict(sorted(nodes.items(), key=lambda x: x[0]))
+
         if with_key_paths:
             node_values = [
                 (jax.tree_util.GetAttrKey(field), value)
