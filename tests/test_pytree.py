@@ -29,7 +29,9 @@ class TestPytree:
         assert pytree.x == 3
         assert pytree.y == 6
 
-        with pytest.raises(AttributeError, match="Cannot add new fields to"):
+        with pytest.raises(
+            AttributeError, match="is immutable, trying to update field"
+        ):
             pytree.x = 4
 
     def test_immutable_pytree_dataclass(self):
