@@ -86,7 +86,7 @@ class Pytree(metaclass=PytreeMeta):
     @classmethod
     def _pytree__flatten(
         cls,
-        static_field_names: tp.FrozenSet[str],
+        static_field_names: tp.Tuple[str, ...],
         pytree: "Pytree",
         *,
         with_key_paths: bool,
@@ -94,20 +94,18 @@ class Pytree(metaclass=PytreeMeta):
         tp.List[tp.Any],
         tp.Tuple[tp.List[str], tp.List[tp.Tuple[str, tp.Any]]],
     ]:
-        static_fields = []
-        node_names = []
-        node_values = []
-        for field in vars(pytree):
-            value = getattr(pytree, field)
-            if field in static_field_names:
-                static_fields.append((field, value))
-            else:
-                if with_key_paths:
-                    value = (jax.tree_util.GetAttrKey(field), value)
-                node_names.append(field)
-                node_values.append(value)
+        nodes = vars(pytree).copy()
+        static = {k: nodes.pop(k) for k in static_field_names}
 
-        return node_values, (node_names, static_fields)
+        if with_key_paths:
+            node_values = [
+                (jax.tree_util.GetAttrKey(field), value)
+                for field, value in nodes.items()
+            ]
+        else:
+            node_values = list(nodes.values())
+
+        return node_values, (list(nodes), list(static.items()))
 
     @classmethod
     def _pytree__unflatten(
