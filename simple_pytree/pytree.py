@@ -1,6 +1,6 @@
 import dataclasses
 import importlib.util
-import itertools
+import inspect
 import typing as tp
 from abc import ABCMeta
 from copy import copy
@@ -53,21 +53,37 @@ class Pytree(metaclass=PytreeMeta):
         cls._pytree__setter_descriptors = frozenset(setter_descriptors)
 
         ordered_static_fields = tuple(sorted(static_fields))
+
+        # TODO: clean up this in the future once minimal supported version is 0.4.7
         if hasattr(jax.tree_util, "register_pytree_with_keys"):
-            jax.tree_util.register_pytree_with_keys(
-                cls,
-                partial(
-                    cls._pytree__flatten,
-                    ordered_static_fields,
-                    with_key_paths=True,
-                ),
-                cls._pytree__unflatten,
-                flatten_func=partial(
-                    cls._pytree__flatten,
-                    ordered_static_fields,
-                    with_key_paths=False,
-                ),
-            )
+            if (
+                "flatten_func"
+                in inspect.signature(jax.tree_util.register_pytree_with_keys).parameters
+            ):
+                jax.tree_util.register_pytree_with_keys(
+                    cls,
+                    partial(
+                        cls._pytree__flatten,
+                        ordered_static_fields,
+                        with_key_paths=True,
+                    ),
+                    cls._pytree__unflatten,
+                    flatten_func=partial(
+                        cls._pytree__flatten,
+                        ordered_static_fields,
+                        with_key_paths=False,
+                    ),
+                )
+            else:
+                jax.tree_util.register_pytree_with_keys(
+                    cls,
+                    partial(
+                        cls._pytree__flatten,
+                        ordered_static_fields,
+                        with_key_paths=True,
+                    ),
+                    cls._pytree__unflatten,
+                )
         else:
             jax.tree_util.register_pytree_node(
                 cls,
