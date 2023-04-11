@@ -97,8 +97,7 @@ class Pytree(metaclass=PytreeMeta):
         static_fields = []
         node_names = []
         node_values = []
-        # sort to ensure deterministic order
-        for field in sorted(vars(pytree)):
+        for field in vars(pytree):
             value = getattr(pytree, field)
             if field in static_field_names:
                 static_fields.append((field, value))
@@ -119,7 +118,8 @@ class Pytree(metaclass=PytreeMeta):
         node_names, static_fields = metadata
         node_fields = dict(zip(node_names, node_values))
         pytree = object.__new__(cls)
-        pytree.__dict__.update(node_fields, **dict(static_fields))
+        pytree.__dict__.update(node_fields)
+        pytree.__dict__.update(dict(static_fields))
         return pytree
 
     @classmethod

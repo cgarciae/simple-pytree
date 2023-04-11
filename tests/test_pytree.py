@@ -195,6 +195,24 @@ class TestPytree:
 
         pytree = jax.tree_map(lambda x: x * 2, pytree)
 
+    def test_deterministic_order(self):
+        class A(Pytree):
+            def __init__(self, order: bool):
+                if order:
+                    self.a = 1
+                    self.b = 2
+                else:
+                    self.b = 2
+                    self.a = 1
+
+        p1 = A(order=True)
+        p2 = A(order=False)
+
+        leaves1 = jax.tree_util.tree_leaves(p1)
+        leaves2 = jax.tree_util.tree_leaves(p2)
+
+        assert leaves1 == leaves2
+
 
 class TestMutablePytree:
     def test_pytree(self):
