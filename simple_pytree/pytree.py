@@ -52,12 +52,13 @@ class Pytree(metaclass=PytreeMeta):
         cls._pytree__static_fields = frozenset(static_fields)
         cls._pytree__setter_descriptors = frozenset(setter_descriptors)
 
+        ordered_static_fields = tuple(sorted(static_fields))
         if hasattr(jax.tree_util, "register_pytree_with_keys"):
             jax.tree_util.register_pytree_with_keys(
                 cls,
                 partial(
                     cls._pytree__flatten,
-                    cls._pytree__static_fields,
+                    ordered_static_fields,
                     with_key_paths=True,
                 ),
                 cls._pytree__unflatten,
@@ -67,7 +68,7 @@ class Pytree(metaclass=PytreeMeta):
                 cls,
                 partial(
                     cls._pytree__flatten,
-                    cls._pytree__static_fields,
+                    ordered_static_fields,
                     with_key_paths=False,
                 ),
                 cls._pytree__unflatten,
@@ -111,9 +112,8 @@ class Pytree(metaclass=PytreeMeta):
         node_values: tp.List[tp.Any],
     ) -> P:
         node_names, static_fields = metadata
-        node_fields = dict(zip(node_names, node_values))
         pytree = object.__new__(cls)
-        pytree.__dict__.update(node_fields)
+        pytree.__dict__.update(zip(node_names, node_values))
         pytree.__dict__.update(static_fields)
         return pytree
 
