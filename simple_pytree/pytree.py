@@ -25,10 +25,11 @@ class PytreeMeta(ABCMeta):
 class Pytree(metaclass=PytreeMeta):
     _pytree__initializing: bool
     _pytree__class_is_mutable: bool
+    _pytree__order_leaves: bool
     _pytree__static_fields: tp.FrozenSet[str]
     _pytree__setter_descriptors: tp.FrozenSet[str]
 
-    def __init_subclass__(cls, mutable: bool = False, deterministic: bool = False):
+    def __init_subclass__(cls, mutable: bool = False, order_leaves: bool = True):
         super().__init_subclass__()
 
         # gather class info
@@ -49,10 +50,11 @@ class Pytree(metaclass=PytreeMeta):
         # init class variables
         cls._pytree__initializing = False
         cls._pytree__class_is_mutable = mutable
+        cls._pytree__order_leaves = order_leaves
         cls._pytree__static_fields = frozenset(static_fields)
         cls._pytree__setter_descriptors = frozenset(setter_descriptors)
 
-        sorted_static_fields = tuple(sorted(static_fields))
+        ordered_static_fields = tuple(sorted(static_fields))
 
         # TODO: clean up this in the future once minimal supported version is 0.4.7
         if hasattr(jax.tree_util, "register_pytree_with_keys"):
@@ -64,16 +66,14 @@ class Pytree(metaclass=PytreeMeta):
                     cls,
                     partial(
                         cls._pytree__flatten,
-                        sorted_static_fields,
+                        ordered_static_fields,
                         with_key_paths=True,
-                        deterministic=deterministic,
                     ),
                     cls._pytree__unflatten,
                     flatten_func=partial(
                         cls._pytree__flatten,
-                        sorted_static_fields,
+                        ordered_static_fields,
                         with_key_paths=False,
-                        deterministic=deterministic,
                     ),
                 )
             else:
@@ -81,9 +81,8 @@ class Pytree(metaclass=PytreeMeta):
                     cls,
                     partial(
                         cls._pytree__flatten,
-                        sorted_static_fields,
+                        ordered_static_fields,
                         with_key_paths=True,
-                        deterministic=deterministic,
                     ),
                     cls._pytree__unflatten,
                 )
@@ -92,9 +91,8 @@ class Pytree(metaclass=PytreeMeta):
                 cls,
                 partial(
                     cls._pytree__flatten,
-                    sorted_static_fields,
+                    ordered_static_fields,
                     with_key_paths=False,
-                    deterministic=deterministic,
                 ),
                 cls._pytree__unflatten,
             )
@@ -112,16 +110,15 @@ class Pytree(metaclass=PytreeMeta):
     @classmethod
     def _pytree__flatten(
         cls,
-        sorted_static_fields: tp.Tuple[str, ...],
+        ordered_static_fields: tp.Tuple[str, ...],
         pytree: "Pytree",
         *,
         with_key_paths: bool,
-        deterministic: bool,
     ) -> tp.Tuple[tp.List[tp.Any], tp.Tuple[tp.List[str], tp.Dict[str, tp.Any]],]:
         nodes = vars(pytree).copy()
-        static = {k: nodes.pop(k) for k in sorted_static_fields}
+        static = {k: nodes.pop(k) for k in ordered_static_fields}
 
-        if deterministic:
+        if cls._pytree__order_leaves:
             nodes = dict(sorted(nodes.items(), key=lambda x: x[0]))
 
         if with_key_paths:
