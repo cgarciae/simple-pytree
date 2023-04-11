@@ -23,9 +23,9 @@ class PytreeMeta(ABCMeta):
 
         vars_dict = vars(obj)
         vars_dict["_pytree__node_fields"] = tuple(
-            field
-            for field in sorted(vars_dict)
-            if field not in cls._pytree__static_fields
+            sorted(
+                field for field in vars_dict if field not in cls._pytree__static_fields
+            )
         )
         return obj
 
