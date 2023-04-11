@@ -95,13 +95,13 @@ class Pytree(metaclass=PytreeMeta):
         nodes = vars(pytree).copy()
         static = {k: nodes.pop(k) for k in static_field_names}
 
-        if with_key_paths:
-            node_values = [
-                (jax.tree_util.GetAttrKey(field), value)
-                for field, value in nodes.items()
-            ]
-        else:
-            node_values = list(nodes.values())
+        # if with_key_paths:
+        #     node_values = [
+        #         (jax.tree_util.GetAttrKey(field), value)
+        #         for field, value in nodes.items()
+        #     ]
+        # else:
+        node_values = list(nodes.values())
 
         return node_values, (list(nodes), static)
 
