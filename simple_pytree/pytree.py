@@ -90,10 +90,7 @@ class Pytree(metaclass=PytreeMeta):
         pytree: "Pytree",
         *,
         with_key_paths: bool,
-    ) -> tp.Tuple[
-        tp.List[tp.Any],
-        tp.Tuple[tp.List[str], tp.List[tp.Tuple[str, tp.Any]]],
-    ]:
+    ) -> tp.Tuple[tp.List[tp.Any], tp.Tuple[tp.List[str], tp.Dict[str, tp.Any]],]:
         nodes = vars(pytree).copy()
         static = {k: nodes.pop(k) for k in static_field_names}
 
@@ -105,19 +102,19 @@ class Pytree(metaclass=PytreeMeta):
         else:
             node_values = list(nodes.values())
 
-        return node_values, (list(nodes), list(static.items()))
+        return node_values, (list(nodes), static)
 
     @classmethod
     def _pytree__unflatten(
         cls: tp.Type[P],
-        metadata: tp.Tuple[tp.List[str], tp.List[tp.Tuple[str, tp.Any]]],
+        metadata: tp.Tuple[tp.List[str], tp.Dict[str, tp.Any]],
         node_values: tp.List[tp.Any],
     ) -> P:
         node_names, static_fields = metadata
         node_fields = dict(zip(node_names, node_values))
         pytree = object.__new__(cls)
         pytree.__dict__.update(node_fields)
-        pytree.__dict__.update(dict(static_fields))
+        pytree.__dict__.update(static_fields)
         return pytree
 
     @classmethod
