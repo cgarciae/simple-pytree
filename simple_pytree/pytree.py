@@ -138,7 +138,7 @@ class Pytree(metaclass=PytreeMeta):
     @classmethod
     def _pytree__unflatten(
         cls: tp.Type[P],
-        metadata: tp.Tuple[tp.Tuple[str, ...], tp.Dict[str, tp.Any]],
+        metadata: tp.Tuple[tp.Tuple[str, ...], tp.Mapping[str, tp.Any]],
         node_values: tp.Tuple[tp.Any, ...],
     ) -> P:
         node_names, static_fields = metadata
