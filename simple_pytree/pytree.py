@@ -52,7 +52,7 @@ class Pytree(metaclass=PytreeMeta):
         cls._pytree__static_fields = frozenset(static_fields)
         cls._pytree__setter_descriptors = frozenset(setter_descriptors)
 
-        ordered_static_fields = tuple(sorted(static_fields))
+        sorted_static_fields = tuple(sorted(static_fields))
 
         # TODO: clean up this in the future once minimal supported version is 0.4.7
         if hasattr(jax.tree_util, "register_pytree_with_keys"):
@@ -64,13 +64,13 @@ class Pytree(metaclass=PytreeMeta):
                     cls,
                     partial(
                         cls._pytree__flatten,
-                        ordered_static_fields,
+                        sorted_static_fields,
                         with_key_paths=True,
                     ),
                     cls._pytree__unflatten,
                     flatten_func=partial(
                         cls._pytree__flatten,
-                        ordered_static_fields,
+                        sorted_static_fields,
                         with_key_paths=False,
                     ),
                 )
@@ -79,7 +79,7 @@ class Pytree(metaclass=PytreeMeta):
                     cls,
                     partial(
                         cls._pytree__flatten,
-                        ordered_static_fields,
+                        sorted_static_fields,
                         with_key_paths=True,
                     ),
                     cls._pytree__unflatten,
@@ -89,7 +89,7 @@ class Pytree(metaclass=PytreeMeta):
                 cls,
                 partial(
                     cls._pytree__flatten,
-                    ordered_static_fields,
+                    sorted_static_fields,
                     with_key_paths=False,
                 ),
                 cls._pytree__unflatten,
@@ -108,13 +108,13 @@ class Pytree(metaclass=PytreeMeta):
     @classmethod
     def _pytree__flatten(
         cls,
-        static_field_names: tp.Tuple[str, ...],
+        sorted_static_fields: tp.Tuple[str, ...],
         pytree: "Pytree",
         *,
         with_key_paths: bool,
     ) -> tp.Tuple[tp.List[tp.Any], tp.Tuple[tp.List[str], tp.Dict[str, tp.Any]],]:
         nodes = vars(pytree).copy()
-        static = {k: nodes.pop(k) for k in static_field_names}
+        static = {k: nodes.pop(k) for k in sorted_static_fields}
 
         if with_key_paths:
             node_values = [
