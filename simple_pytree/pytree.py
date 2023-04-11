@@ -5,6 +5,7 @@ import typing as tp
 from abc import ABCMeta
 from copy import copy
 from functools import partial
+from types import MappingProxyType
 
 import jax
 
@@ -114,7 +115,10 @@ class Pytree(metaclass=PytreeMeta):
         pytree: "Pytree",
         *,
         with_key_paths: bool,
-    ) -> tp.Tuple[tp.List[tp.Any], tp.Tuple[tp.List[str], tp.Dict[str, tp.Any]],]:
+    ) -> tp.Tuple[
+        tp.Tuple[tp.Any, ...],
+        tp.Tuple[tp.Tuple[str, ...], tp.Mapping[str, tp.Any]],
+    ]:
         nodes = vars(pytree).copy()
         static = {k: nodes.pop(k) for k in ordered_static_fields}
 
@@ -122,20 +126,20 @@ class Pytree(metaclass=PytreeMeta):
             nodes = dict(sorted(nodes.items(), key=lambda x: x[0]))
 
         if with_key_paths:
-            node_values = [
+            node_values = tuple(
                 (jax.tree_util.GetAttrKey(field), value)
                 for field, value in nodes.items()
-            ]
+            )
         else:
-            node_values = list(nodes.values())
+            node_values = tuple(nodes.values())
 
-        return node_values, (list(nodes), static)
+        return node_values, (tuple(nodes), MappingProxyType(static))
 
     @classmethod
     def _pytree__unflatten(
         cls: tp.Type[P],
-        metadata: tp.Tuple[tp.List[str], tp.Dict[str, tp.Any]],
-        node_values: tp.List[tp.Any],
+        metadata: tp.Tuple[tp.Tuple[str, ...], tp.Dict[str, tp.Any]],
+        node_values: tp.Tuple[tp.Any, ...],
     ) -> P:
         node_names, static_fields = metadata
         pytree = object.__new__(cls)
