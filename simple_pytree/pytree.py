@@ -53,26 +53,31 @@ class Pytree(metaclass=PytreeMeta):
         cls._pytree__setter_descriptors = frozenset(setter_descriptors)
 
         ordered_static_fields = tuple(sorted(static_fields))
-        # if hasattr(jax.tree_util, "register_pytree_with_keys"):
-        #     jax.tree_util.register_pytree_with_keys(
-        #         cls,
-        #         partial(
-        #             cls._pytree__flatten,
-        #             ordered_static_fields,
-        #             with_key_paths=True,
-        #         ),
-        #         cls._pytree__unflatten,
-        #     )
-        # else:
-        jax.tree_util.register_pytree_node(
-            cls,
-            partial(
-                cls._pytree__flatten,
-                ordered_static_fields,
-                with_key_paths=False,
-            ),
-            cls._pytree__unflatten,
-        )
+        if hasattr(jax.tree_util, "register_pytree_with_keys"):
+            jax.tree_util.register_pytree_with_keys(
+                cls,
+                partial(
+                    cls._pytree__flatten,
+                    ordered_static_fields,
+                    with_key_paths=True,
+                ),
+                cls._pytree__unflatten,
+                flatten_func=partial(
+                    cls._pytree__flatten,
+                    ordered_static_fields,
+                    with_key_paths=False,
+                ),
+            )
+        else:
+            jax.tree_util.register_pytree_node(
+                cls,
+                partial(
+                    cls._pytree__flatten,
+                    ordered_static_fields,
+                    with_key_paths=False,
+                ),
+                cls._pytree__unflatten,
+            )
 
         # flax serialization support
         if importlib.util.find_spec("flax") is not None:
