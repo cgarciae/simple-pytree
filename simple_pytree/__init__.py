@@ -1,4 +1,4 @@
-__version__ = "0.1.7"
+__version__ = "0.2.0"
 
 from .dataclass import dataclass, field, static_field
 from .pytree import Pytree, PytreeMeta
