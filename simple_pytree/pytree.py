@@ -135,7 +135,8 @@ class Pytree(metaclass=PytreeMeta):
 
         if all_vars:
             raise ValueError(
-                f"Unexpected fields in {cls.__name__}: {', '.join(all_vars.keys())}"
+                f"Unexpected fields in {cls.__name__}: {', '.join(all_vars.keys())}."
+                "You cannot add new fields to a Pytree after it has been initialized."
             )
 
         return node_values, MappingProxyType(static)
