@@ -159,9 +159,6 @@ class TestPytree:
 
         assert n == 1
 
-        with pytest.raises(AttributeError, match=r"<.*> is immutable"):
-            foo.y = 2
-
     def test_replace_unknown_fields_error(self):
         class Foo(Pytree):
             pass
@@ -195,6 +192,24 @@ class TestPytree:
 
         pytree = jax.tree_map(lambda x: x * 2, pytree)
 
+    def test_deterministic_order(self):
+        class A(Pytree):
+            def __init__(self, order: bool):
+                if order:
+                    self.a = 1
+                    self.b = 2
+                else:
+                    self.b = 2
+                    self.a = 1
+
+        p1 = A(order=True)
+        p2 = A(order=False)
+
+        leaves1 = jax.tree_util.tree_leaves(p1)
+        leaves2 = jax.tree_util.tree_leaves(p2)
+
+        assert leaves1 == leaves2
+
 
 class TestMutablePytree:
     def test_pytree(self):
@@ -221,6 +236,17 @@ class TestMutablePytree:
         # test mutation
         pytree.x = 4
         assert pytree.x == 4
+
+    def test_no_new_fields_after_init(self):
+        class Foo(Pytree, mutable=True):
+            def __init__(self, x):
+                self.x = x
+
+        foo = Foo(x=1)
+        foo.x = 2
+
+        with pytest.raises(AttributeError, match=r"Cannot add new fields to"):
+            foo.y = 2
 
     def test_pytree_dataclass(self):
         @dataclass
