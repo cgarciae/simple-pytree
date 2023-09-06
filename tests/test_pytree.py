@@ -1,3 +1,4 @@
+import dataclasses
 from typing import Generic, TypeVar
 
 import jax
@@ -270,3 +271,21 @@ class TestMutablePytree:
         # test mutation
         pytree.x = 4
         assert pytree.x == 4
+
+    def test_dataclass_inheritance(self):
+        A = dataclasses.make_dataclass(
+            "A",
+            [("x", int), "y", ("z", int, static_field(default=5))],
+        )
+
+        @dataclass
+        class B(Pytree, A):
+            ...
+
+        b = B(1, 2)
+
+        assert b.x == 1
+        assert b.y == 2
+        assert b.z == 5
+
+        assert jax.tree_util.tree_leaves(b) == [1, 2]
