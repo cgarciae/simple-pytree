@@ -239,10 +239,11 @@ class Pytree(metaclass=PytreeMeta):
 def _inherited_static_fields(cls: type) -> tp.Set[str]:
     static_fields = set()
     for parent_class in cls.mro():
-        if (
-            parent_class is not cls
-            and parent_class is not Pytree
-            and issubclass(parent_class, Pytree)
-        ):
-            static_fields.update(parent_class._pytree__static_fields)
+        if parent_class is not cls and parent_class is not Pytree:
+            if issubclass(parent_class, Pytree):
+                static_fields.update(parent_class._pytree__static_fields)
+            elif dataclasses.is_dataclass(parent_class):
+                for field in dataclasses.fields(parent_class):
+                    if not field.metadata.get("pytree_node", True):
+                        static_fields.add(field.name)
     return static_fields
