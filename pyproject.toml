@@ -8,7 +8,7 @@ readme = "README.md"
 packages = [{ include = "simple_pytree" }]
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.12"
+python = ">=3.8"
 jax = "*"
 jaxlib = "*"
 typing-extensions = "*"
